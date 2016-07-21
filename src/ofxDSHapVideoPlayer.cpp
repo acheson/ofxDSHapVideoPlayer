@@ -1238,7 +1238,7 @@ bool ofxDSHapVideoPlayer::load(string path) {
 
     if (err != GL_NO_ERROR){
 
-        printf("error %s\n", gluErrorString(err));
+		printf("load error - %u\n", err);
     }
 
 	 if (!bShaderInitialized){
@@ -1409,7 +1409,7 @@ void ofxDSHapVideoPlayer::writeToTexture(ofTexture &texture) {
 
     if (err != GL_NO_ERROR){
 
-        printf("error %s\n", gluErrorString(err));
+        printf("writeToTexture error - %u\n" ,err);
     }
 
     if (!ofIsGLProgrammableRenderer())
