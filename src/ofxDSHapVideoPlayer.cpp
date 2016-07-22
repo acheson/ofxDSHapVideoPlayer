@@ -18,11 +18,29 @@
 #include "DSUncompressedSampleGrabber.h"
 #include "snappy-c.h"
 
+
+
+
+#include <Mmdeviceapi.h>
+#include <Functiondiscoverykeys_devpkey.h>
+#pragma comment(lib, "uuid.lib")
+
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DirectShowVideo - contains a simple directshow video player implementation
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#define EXIT_ON_ERROR(hres)  \
+              if (FAILED(hres)) { goto Exit; }
+#define SAFE_RELEASE(punk)  \
+              if ((punk) != NULL)  \
+                { (punk)->Release(); (punk) = NULL; }
+
+const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
+const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 
 DEFINE_GUID(CLSID_SampleGrabber,
 	0xb62f694e, 0x593, 0x4e60, 0xaa, 0x1c, 0x16, 0xaf, 0x64, 0x96, 0xac, 0x39);
@@ -245,7 +263,7 @@ class DirectShowHapVideo : public ISampleGrabberCB {
     	return E_NOTIMPL;
     }
 
-	bool loadMovieManualGraph(string path) {
+	bool loadMovieManualGraph(string path, int audioDeviceIndex = NULL) {
 
         //Release all the filters etc.
 		tearDown();
@@ -385,7 +403,8 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 		IPin * aviSplitterAudioOutput = NULL;
 
 		if (getContainsAudio(aviSplitterFilter, aviSplitterAudioOutput)){
-            this->createAudioRendererFilter(success);
+            
+			this->createAudioRendererFilter(success, audioDeviceIndex);
             this->addFilter(this->audioRendererFilter, L"SoundRenderer", success);
 
             IPin * audioInputPin = this->getInputPin(audioRendererFilter, success);
@@ -515,13 +534,128 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 		}
     }
 
-    void createAudioRendererFilter(bool &success)
+    void createAudioRendererFilter(bool &success, int audioDeviceIndex = -1)
     {
-        HRESULT hr = CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&this->audioRendererFilter));
-		if (FAILED(hr)){
-			success = false;
+	
+		if (audioDeviceIndex == -1) {
+ 			HRESULT hr = CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&this->audioRendererFilter));
+			if (FAILED(hr)) {
+				success = false;
+			}
+		}
+		else {
+			HRESULT hr = S_OK;
+			IMMDeviceEnumerator *pEnumerator = NULL;
+			IMMDeviceCollection *pCollection = NULL;
+			IMMDevice *pEndpoint = NULL;
+			IPropertyStore *pProps = NULL;
+			LPWSTR pwszID = NULL;
+
+			hr = CoCreateInstance(
+				CLSID_MMDeviceEnumerator, NULL,
+				CLSCTX_ALL, IID_IMMDeviceEnumerator,
+				(void**)&pEnumerator);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+				hr = pEnumerator->EnumAudioEndpoints(
+					eRender, DEVICE_STATE_ACTIVE,
+					&pCollection);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+			UINT  count;
+			hr = pCollection->GetCount(&count);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+			if (count == 0) {
+				printf("No endpoints found.\n");
+			}
+
+			// If targeting a device that doesn't exist just use default and notify
+			if (audioDeviceIndex > count - 1) {
+				printf("Target device at index %i not found\n", audioDeviceIndex);
+				
+				HRESULT hr = CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&this->audioRendererFilter));
+				if (FAILED(hr)) {
+					success = false;
+					
+				}
+			}
+
+			// Each loop prints the name of an endpoint device.
+			for (ULONG i = 0; i < count; i++)
+			{
+				// Get pointer to endpoint number i.
+				hr = pCollection->Item(i, &pEndpoint);
+				if (FAILED(hr)) {
+					success = false;
+				}
+				EXIT_ON_ERROR(hr)
+					
+				// Activate the matching 
+				if (audioDeviceIndex == i) {
+					pEndpoint->Activate(__uuidof(IBaseFilter), CLSCTX_ALL, NULL, (void**)(&this->audioRendererFilter));
+
+					// Get the endpoint ID string.
+					hr = pEndpoint->GetId(&pwszID);
+					if (FAILED(hr)) {
+						success = false;
+					}
+					EXIT_ON_ERROR(hr)
+
+						hr = pEndpoint->OpenPropertyStore(
+							STGM_READ, &pProps);
+					if (FAILED(hr)) {
+						success = false;
+					}
+					EXIT_ON_ERROR(hr)
+
+						PROPVARIANT varName;
+					// Initialize container for property value.
+					PropVariantInit(&varName);
+
+					// Get the endpoint's friendly-name property.
+					hr = pProps->GetValue(
+						PKEY_Device_FriendlyName, &varName);
+					if (FAILED(hr)) {
+						success = false;
+					}
+					EXIT_ON_ERROR(hr)
+
+						// Print endpoint friendly name and endpoint ID.
+						printf("Endpoint %d: \"%S\" (%S)\n", i, varName.pwszVal, pwszID);
+
+					CoTaskMemFree(pwszID);
+					pwszID = NULL;
+					PropVariantClear(&varName);
+					SAFE_RELEASE(pProps)
+						SAFE_RELEASE(pEndpoint)
+				}
+
+		
+			}
+			SAFE_RELEASE(pEnumerator)
+				SAFE_RELEASE(pCollection)
+				return;
+
+		Exit:
+			printf("Error!\n");
+			CoTaskMemFree(pwszID);
+			SAFE_RELEASE(pEnumerator)
+				SAFE_RELEASE(pCollection)
+				SAFE_RELEASE(pEndpoint)
+				SAFE_RELEASE(pProps)
 		}
     }
+
 
     void addFilter(IBaseFilter * filter, LPCWSTR filterName, bool &success)
     {
@@ -1187,13 +1321,17 @@ ofxDSHapVideoPlayer::~ofxDSHapVideoPlayer(){
 }
 
 bool ofxDSHapVideoPlayer::load(string path) {
+	return load(path, NULL);
+}
+
+bool ofxDSHapVideoPlayer::load(string path, int audioDeviceIndex) {
 
 	path = ofToDataPath(path); 
 
 	close();
 	player = new DirectShowHapVideo();
 
-	bool bOK = player->loadMovieManualGraph(path); // manual graph
+	bool bOK = player->loadMovieManualGraph(path, audioDeviceIndex); // manual graph
 
 	 if( bOK ){
 
@@ -1639,3 +1777,5 @@ ofxDSHapVideoPlayer::HapType ofxDSHapVideoPlayer::getHapType() {
         return HapType::HAPQ;
     }
 }
+
+

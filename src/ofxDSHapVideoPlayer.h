@@ -1,7 +1,9 @@
 
-//ofxDSHapVideoPlayer written by Jeremy Rotsztain and Philippe Laurheret for Second Story, 2015
-//DirectShowVideo and ofDirectShowPlayer written by Theodore Watson, Jan 2014
-//See the cpp file for the DirectShow implementation 
+// ofxDSHapVideoPlayer written by Jeremy Rotsztain and Philippe Laurheret for Second Story, 2015
+// DirectShowVideo and ofDirectShowPlayer written by Theodore Watson, Jan 2014
+// See the cpp file for the DirectShow implementation 
+// Forked to https://github.com/acheson/ofxDSHapVideoPlayer
+// Edited to support selection of audio output destination
 
 #pragma once 
 
@@ -17,7 +19,8 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		ofxDSHapVideoPlayer();
 		~ofxDSHapVideoPlayer();
 
-		bool load(string path);
+		bool load(string path); 
+		bool load(string path, int audioDeviceIndex);
 		void update();
 		void waitUpdate(long milliseconds);
 		void writeToTexture(ofTexture& texture);
@@ -91,4 +94,8 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		ofTexture tex; // texture for pix
 
 		HapTextureFormat textureFormat;
+
+		//void printAudioEndpointNames();
+		//void setAudioEndpoint(int index);
+		//void connectAudio();
 };
