@@ -80,6 +80,9 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 
 		 int				height;
 		 int				width;
+		 
+		 string		deviceName;
+		 int		device;
 
 	protected:
 
@@ -98,4 +101,7 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		//void printAudioEndpointNames();
 		//void setAudioEndpoint(int index);
 		//void connectAudio();
+
+		
+
 };

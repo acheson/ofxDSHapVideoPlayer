@@ -586,11 +586,10 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 				HRESULT hr = CoCreateInstance(CLSID_DSoundRender, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void**)(&this->audioRendererFilter));
 				if (FAILED(hr)) {
 					success = false;
-					
 				}
 			}
 
-			// Each loop prints the name of an endpoint device.
+			// loop through all of the endpoint devices.
 			for (ULONG i = 0; i < count; i++)
 			{
 				// Get pointer to endpoint number i.
@@ -618,7 +617,7 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 					}
 					EXIT_ON_ERROR(hr)
 
-						PROPVARIANT varName;
+					PROPVARIANT varName;
 					// Initialize container for property value.
 					PropVariantInit(&varName);
 
@@ -630,8 +629,11 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 					}
 					EXIT_ON_ERROR(hr)
 
-						// Print endpoint friendly name and endpoint ID.
-						printf("Endpoint %d: \"%S\" (%S)\n", i, varName.pwszVal, pwszID);
+					// set deviceName for future usage	
+					LPWSTR2String(deviceName, varName.pwszVal);
+						
+					// Print endpoint friendly name and endpoint ID.
+					// printf("Endpoint %d: \"%S\" (%S) %S Hello \n", i, varName.pwszVal, pwszID);
 
 					CoTaskMemFree(pwszID);
 					pwszID = NULL;
@@ -656,6 +658,27 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 		}
     }
 
+	// Converts an LPWSTR to std: string
+	bool LPWSTR2String(std::string& outString, const LPWSTR inLPWSTR, UINT codepage = CP_ACP)
+	{
+		bool retCode = false;
+		char* temp = 0;
+		int bytesRequired;
+		bytesRequired = WideCharToMultiByte(codepage, 0, inLPWSTR, -1, 0, 0, 0, 0);
+		if (bytesRequired > 0)
+		{
+			temp = new char[bytesRequired];
+			int rc = WideCharToMultiByte(codepage, 0, inLPWSTR, -1, temp, bytesRequired, 0, 0);
+			if (rc != 0)
+			{
+				temp[bytesRequired - 1] = 0;
+				outString = temp;
+				retCode = true;
+			}
+		}
+		delete[] temp;
+		return retCode;
+	}
 
     void addFilter(IBaseFilter * filter, LPCWSTR filterName, bool &success)
     {
@@ -869,6 +892,10 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 		enumPins->Release();
 
 		return bContainsAudio;
+	}
+
+	string getDeviceName() {
+		return this->deviceName;
 	}
 
 	void update(){
@@ -1298,6 +1325,9 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 	CRITICAL_SECTION critSection;
 	unsigned char * rawBuffer;
 	HapTextureFormat textureFormat;
+
+
+	string deviceName;  // Keep track of readable device name for pairing with other devices and playback methods
 };
 
 
@@ -1333,6 +1363,9 @@ bool ofxDSHapVideoPlayer::load(string path, int audioDeviceIndex) {
 
 	bool bOK = player->loadMovieManualGraph(path, audioDeviceIndex); // manual graph
 
+	device = audioDeviceIndex;
+	deviceName = player->getDeviceName();
+
 	 if( bOK ){
 
 		 width = player->getWidth();
@@ -1358,7 +1391,7 @@ bool ofxDSHapVideoPlayer::load(string path, int audioDeviceIndex) {
 				 pix.allocate(width, height, OF_IMAGE_COLOR_ALPHA);
 			 }
 			 else {
-				 ofLogNotice() << "HAPQ";
+				 //ofLogNotice() << "HAPQ";
 				 texData.glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; // GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				 pix.allocate(width, height, OF_IMAGE_COLOR);
 			 }
