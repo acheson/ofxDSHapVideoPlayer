@@ -24,8 +24,8 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		void update();
 		void waitUpdate(long milliseconds);
 		void writeToTexture(ofTexture& texture);
-		void draw(int x, int y, int w, int h);
-		void draw(int x, int y) { draw(x, y, getWidth(), getHeight()); }
+		void draw(int x, int y, int w, int h, int alpha);
+		void draw(int x, int y, int alpha) { draw(x, y, getWidth(), getHeight(), alpha); }
 
 		 void				close();
 	
@@ -61,7 +61,7 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		 void 				setLoopState(ofLoopType state);
 		 void   			setSpeed(float speed);
 		 void				setFrame(int frame);  // frame 0 = first frame...
-	
+
 		 int				getCurrentFrame() const;
 		 int				getTotalFrames() const;
 		 ofLoopType			getLoopState() const;
