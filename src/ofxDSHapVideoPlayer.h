@@ -25,7 +25,7 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		void waitUpdate(long milliseconds);
 		void writeToTexture(ofTexture& texture);
 		void draw(int x, int y, int w, int h, int alpha);
-		void draw(int x, int y, int alpha) { draw(x, y, getWidth(), getHeight(), alpha); }
+		void draw(int x, int y, int alpha = 255) { draw(x, y, getWidth(), getHeight(), alpha); }
 
 		 void				close();
 	
