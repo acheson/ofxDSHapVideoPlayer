@@ -1344,6 +1344,7 @@ ofxDSHapVideoPlayer::ofxDSHapVideoPlayer(){
 	bShaderInitialized = false;
 	width = 0;
 	height = 0;
+	tintColor = 255;
 }
 
 ofxDSHapVideoPlayer::~ofxDSHapVideoPlayer(){
@@ -1596,7 +1597,7 @@ void ofxDSHapVideoPlayer::writeToTexture(ofTexture &texture) {
 void ofxDSHapVideoPlayer::draw(int x, int y, int w, int h, int alpha){
 
 	ofPushMatrix();
-	ofSetColor(255, alpha);
+	ofSetColor(tintColor, alpha);
 
 	if (textureFormat == HapTextureFormat_YCoCg_DXT5) shader.begin();
 

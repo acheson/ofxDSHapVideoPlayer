@@ -84,6 +84,8 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		 string		deviceName;
 		 int		device;
 
+		 ofColor tintColor;
+
 	protected:
 
 		// using DS for grabbing frames
@@ -102,6 +104,5 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 		//void setAudioEndpoint(int index);
 		//void connectAudio();
 
-		
 
 };
