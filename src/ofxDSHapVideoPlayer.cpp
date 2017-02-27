@@ -1060,6 +1060,7 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 			if( bPaused ){
 				controlInterface->Pause(); 
 			}else{
+				bEndReached = false;
 				controlInterface->Run(); 
 			}
 			updatePlayState();
