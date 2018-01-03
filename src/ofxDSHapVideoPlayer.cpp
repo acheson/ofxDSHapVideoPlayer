@@ -1598,6 +1598,7 @@ void ofxDSHapVideoPlayer::writeToTexture(ofTexture &texture) {
 void ofxDSHapVideoPlayer::draw(int x, int y, int w, int h, int alpha){
 
 	ofPushMatrix();
+	ofPushStyle();
 	ofSetColor(tintColor, alpha);
 
 	if (textureFormat == HapTextureFormat_YCoCg_DXT5) shader.begin();
@@ -1606,6 +1607,7 @@ void ofxDSHapVideoPlayer::draw(int x, int y, int w, int h, int alpha){
 
 	if (textureFormat == HapTextureFormat_YCoCg_DXT5) shader.end();
 
+	ofPopStyle();
 	ofPopMatrix();
 }
 
