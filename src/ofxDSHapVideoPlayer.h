@@ -21,6 +21,7 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 
 		bool load(string path); 
 		bool load(string path, int audioDeviceIndex);
+		int getAudioDeviceId(string name);
 		void update();
 		void waitUpdate(long milliseconds);
 		void writeToTexture(ofTexture& texture);
@@ -100,9 +101,6 @@ class ofxDSHapVideoPlayer : public ofBaseVideoPlayer {
 
 		HapTextureFormat textureFormat;
 
-		//void printAudioEndpointNames();
-		//void setAudioEndpoint(int index);
-		//void connectAudio();
-
+		vector<string> audioDeviceNames; 
 
 };

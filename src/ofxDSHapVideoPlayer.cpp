@@ -633,7 +633,7 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 					LPWSTR2String(deviceName, varName.pwszVal);
 						
 					// Print endpoint friendly name and endpoint ID.
-					// printf("Endpoint %d: \"%S\" (%S) %S Hello \n", i, varName.pwszVal, pwszID);
+					printf("Endpoint %d: \"%S\" (%S) %S Hello \n", i, varName.pwszVal, pwszID);
 
 					CoTaskMemFree(pwszID);
 					pwszID = NULL;
@@ -1495,12 +1495,10 @@ bool ofxDSHapVideoPlayer::load(string path, int audioDeviceIndex) {
 		 }
 
 		 if (bShaderOK){
-
 			 //ofLogNotice("ofxDSHapVideoPlayer") << "Hap shader created";
 			 bShaderInitialized = true;
 		 }
 		 else {
-
 			 ofLogError("ofxDSHapVideoPlayer") << "Failed to setup shader";
 			 return false;
 		 }
@@ -1516,6 +1514,135 @@ bool ofxDSHapVideoPlayer::load(string path, int audioDeviceIndex) {
 
 	return bOK;
 }
+
+
+int ofxDSHapVideoPlayer::getAudioDeviceId(string name) {
+	
+	
+	if (audioDeviceNames.size() == 0) {
+		// ROB
+		int deviceId = 0;
+		bool success;
+
+		HRESULT hr = S_OK;
+		IMMDeviceEnumerator *pEnumerator = NULL;
+		IMMDeviceCollection *pCollection = NULL;
+		IMMDevice *pEndpoint = NULL;
+		IPropertyStore *pProps = NULL;
+		LPWSTR pwszID = NULL;
+
+		hr = CoCreateInstance(
+			CLSID_MMDeviceEnumerator, NULL,
+			CLSCTX_ALL, IID_IMMDeviceEnumerator,
+			(void**)&pEnumerator);
+		if (FAILED(hr)) {
+			success = false;
+		}
+		EXIT_ON_ERROR(hr)
+
+			hr = pEnumerator->EnumAudioEndpoints(
+				eRender, DEVICE_STATE_ACTIVE,
+				&pCollection);
+		if (FAILED(hr)) {
+			success = false;
+		}
+		EXIT_ON_ERROR(hr)
+
+			UINT  count;
+		hr = pCollection->GetCount(&count);
+		if (FAILED(hr)) {
+			success = false;
+		}
+		EXIT_ON_ERROR(hr)
+
+		if (count == 0) {
+			printf("No endpoints found.\n");
+			return 0;
+		}
+
+		// loop through all of the endpoint devices.
+		for (ULONG i = 0; i < count; i++)
+		{
+			// Get pointer to endpoint number i.
+			hr = pCollection->Item(i, &pEndpoint);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+
+				// Get the endpoint ID string.
+				hr = pEndpoint->GetId(&pwszID);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+				hr = pEndpoint->OpenPropertyStore(STGM_READ, &pProps);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+				PROPVARIANT varName;
+			// Initialize container for property value.
+			PropVariantInit(&varName);
+
+			// Get the endpoint's friendly-name property.
+			hr = pProps->GetValue(
+				PKEY_Device_FriendlyName, &varName);
+			if (FAILED(hr)) {
+				success = false;
+			}
+			EXIT_ON_ERROR(hr)
+
+			// set deviceName for future usage	
+			string foundDeviceName;
+			bool retCode = false;
+			char* temp = 0;
+			int bytesRequired;
+			bytesRequired = WideCharToMultiByte(CP_ACP, 0, varName.pwszVal, -1, 0, 0, 0, 0);
+			if (bytesRequired > 0)
+			{
+				temp = new char[bytesRequired];
+				int rc = WideCharToMultiByte(CP_ACP, 0, varName.pwszVal, -1, temp, bytesRequired, 0, 0);
+				if (rc != 0)
+				{
+					temp[bytesRequired - 1] = 0;
+					foundDeviceName = temp;
+					retCode = true;
+				}
+			}
+			delete[] temp;
+
+			CoTaskMemFree(pwszID);
+			pwszID = NULL;
+			PropVariantClear(&varName);
+			SAFE_RELEASE(pProps)
+			SAFE_RELEASE(pEndpoint)
+
+			audioDeviceNames.push_back(foundDeviceName);
+
+		}
+		SAFE_RELEASE(pEnumerator)
+		SAFE_RELEASE(pCollection)
+
+	Exit:
+		printf("Error!\n");
+		CoTaskMemFree(pwszID);
+		SAFE_RELEASE(pEnumerator)
+		SAFE_RELEASE(pCollection)
+		SAFE_RELEASE(pEndpoint)
+		SAFE_RELEASE(pProps)
+	}
+
+	for (int i = 0; i < audioDeviceNames.size(); i++) {
+		if (ofIsStringInString(audioDeviceNames[i], name)) {
+			return i;
+		}
+	}
+}
+
 
 void ofxDSHapVideoPlayer::close(){
 	stop();
@@ -1597,7 +1724,7 @@ void ofxDSHapVideoPlayer::writeToTexture(ofTexture &texture) {
 
 void ofxDSHapVideoPlayer::draw(int x, int y, int w, int h, int alpha){
 
-	ofPushMatrix();
+	ofPushStyle();
 	ofSetColor(tintColor, alpha);
 
 	if (textureFormat == HapTextureFormat_YCoCg_DXT5) shader.begin();
@@ -1606,7 +1733,7 @@ void ofxDSHapVideoPlayer::draw(int x, int y, int w, int h, int alpha){
 
 	if (textureFormat == HapTextureFormat_YCoCg_DXT5) shader.end();
 
-	ofPopMatrix();
+	ofPopStyle();
 }
 
 void ofxDSHapVideoPlayer::play(){
