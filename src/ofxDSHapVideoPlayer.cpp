@@ -943,6 +943,10 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 			if( volPct > 1 ) volPct = 1.0; 
 
 			long vol = log10(volPct) * 4000.0; 
+
+			// prevent setting too low which sets vol to max;
+			if (vol < -8000) vol = -8000;
+
 			audioInterface->put_Volume(vol);
 		}
 	}
@@ -1641,6 +1645,7 @@ int ofxDSHapVideoPlayer::getAudioDeviceId(string name) {
 			return i;
 		}
 	}
+	return 0;
 }
 
 
