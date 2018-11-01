@@ -649,7 +649,7 @@ class DirectShowHapVideo : public ISampleGrabberCB {
 				return;
 
 		Exit:
-			printf("Error!\n");
+			printf("Error! Could not create audio filter \n");
 			CoTaskMemFree(pwszID);
 			SAFE_RELEASE(pEnumerator)
 				SAFE_RELEASE(pCollection)
@@ -1632,7 +1632,6 @@ int ofxDSHapVideoPlayer::getAudioDeviceId(string name) {
 		SAFE_RELEASE(pCollection)
 
 	Exit:
-		printf("Error!\n");
 		CoTaskMemFree(pwszID);
 		SAFE_RELEASE(pEnumerator)
 		SAFE_RELEASE(pCollection)
